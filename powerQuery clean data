@@ -1,0 +1,170 @@
+let
+    Source = Excel.CurrentWorkbook(){[Name="MASTER_DATA"]}[Content],
+
+    CleanColumnNames = Table.TransformColumnNames(
+        Source,
+        each
+            let
+                txt = Text.Lower(_),
+
+                // remove symbols + noise
+                clean = Text.Trim(
+                    Text.Remove(txt, {"*", "†", "§", "¶", "#", "(", ")", "%"})
+                ),
+
+                standardized =
+
+                // =====================
+                // CORE TOTALS
+                // =====================
+                if Text.Contains(clean, "occurrence") and Text.Contains(clean, "no")
+                    then "Occurrence_No"
+
+                else if Text.Contains(clean, "occurrence") and Text.Contains(clean, "rate")
+                    then "Occurrence_Rate"
+
+                else if Text.Contains(clean, "occurrence") and Text.Contains(clean, "ratio")
+                    then "Occurrence_Ratio"
+
+                else if Text.Contains(clean, "residence") and Text.Contains(clean, "no")
+                    then "Residence_No"
+
+                else if Text.Contains(clean, "residence") and Text.Contains(clean, "rate")
+                    then "Residence_Rate"
+
+                else if Text.Contains(clean, "residence") and Text.Contains(clean, "ratio")
+                    then "Residence_Ratio"
+
+                else if Text.Contains(clean, "out-of") or Text.Contains(clean, "out of")
+                    then "OutOfArea_Abortions"
+
+                // =====================
+                // AGE GROUPS
+                // =====================
+                else if Text.Contains(clean, "<15")
+                    then "Age_<15"
+
+                else if Text.Contains(clean, "15–19") or Text.Contains(clean, "15-19")
+                    then "Age_15_19"
+
+                else if Text.Contains(clean, "20–24") or Text.Contains(clean, "20-24")
+                    then "Age_20_24"
+
+                else if Text.Contains(clean, "25–29") or Text.Contains(clean, "25-29")
+                    then "Age_25_29"
+
+                else if Text.Contains(clean, "30–34") or Text.Contains(clean, "30-34")
+                    then "Age_30_34"
+
+                else if Text.Contains(clean, "35–39") or Text.Contains(clean, "35-39")
+                    then "Age_35_39"
+
+                else if Text.Contains(clean, "≥40") or Text.Contains(clean, ">40")
+                    then "Age_40_plus"
+
+                // =====================
+                // RACE / ETHNICITY
+                // =====================
+                else if Text.Contains(clean, "non hispanic") and Text.Contains(clean, "white")
+                    then "White_NonHispanic"
+
+                else if Text.Contains(clean, "non hispanic") and Text.Contains(clean, "black")
+                    then "Black_NonHispanic"
+
+                else if Text.Contains(clean, "non hispanic") and Text.Contains(clean, "other")
+                    then "Other_NonHispanic"
+
+                else if Text.Contains(clean, "hispanic")
+                    then "Hispanic"
+
+                // =====================
+                // MARITAL STATUS
+                // =====================
+                else if Text.Contains(clean, "married")
+                    then "Married"
+
+                else if Text.Contains(clean, "unmarried")
+                    then "Unmarried"
+
+                // =====================
+                // PREVIOUS LIVE BIRTHS
+                // =====================
+                else if Text.Contains(clean, "previous live births") and Text.Contains(clean, "0")
+                    then "PrevBirths_0"
+
+                else if Text.Contains(clean, "previous live births") and Text.Contains(clean, "1")
+                    then "PrevBirths_1"
+
+                else if Text.Contains(clean, "previous live births") and Text.Contains(clean, "2")
+                    then "PrevBirths_2"
+
+                else if Text.Contains(clean, "previous live births") and Text.Contains(clean, "3")
+                    then "PrevBirths_3"
+
+                else if Text.Contains(clean, "previous live births") and Text.Contains(clean, "4")
+                    then "PrevBirths_4plus"
+
+                // =====================
+                // PREVIOUS ABORTIONS
+                // =====================
+                else if Text.Contains(clean, "previous induced abortions") and Text.Contains(clean, "0")
+                    then "PrevAbortions_0"
+
+                else if Text.Contains(clean, "previous induced abortions") and Text.Contains(clean, "1")
+                    then "PrevAbortions_1"
+
+                else if Text.Contains(clean, "previous induced abortions") and Text.Contains(clean, "2")
+                    then "PrevAbortions_2"
+
+                else if Text.Contains(clean, "previous induced abortions") and Text.Contains(clean, "3")
+                    then "PrevAbortions_3plus"
+
+                // =====================
+                // GESTATION
+                // =====================
+                else if Text.Contains(clean, "≤6")
+                    then "Gestation_≤6"
+
+                else if Text.Contains(clean, "7–9") or Text.Contains(clean, "7-9")
+                    then "Gestation_7_9"
+
+                else if Text.Contains(clean, "10–13") or Text.Contains(clean, "10-13")
+                    then "Gestation_10_13"
+
+                else if Text.Contains(clean, "14–15")
+                    then "Gestation_14_15"
+
+                else if Text.Contains(clean, "16–17")
+                    then "Gestation_16_17"
+
+                else if Text.Contains(clean, "18–20")
+                    then "Gestation_18_20"
+
+                else if Text.Contains(clean, "≥21")
+                    then "Gestation_21_plus"
+
+                // =====================
+                // METHOD TYPE
+                // =====================
+                else if Text.Contains(clean, "medication") or Text.Contains(clean, "medical")
+                    then "Medication"
+
+                else if Text.Contains(clean, "surgical") or Text.Contains(clean, "curettage")
+                    then "Surgical"
+
+                else if Text.Contains(clean, "hysterectomy")
+                    then "Hysterectomy"
+
+                else if Text.Contains(clean, "intrauterine")
+                    then "Intrauterine"
+
+                // =====================
+                // DEFAULT
+                // =====================
+                else clean
+            in
+                standardized
+    )
+in
+    CleanColumnNames
+
