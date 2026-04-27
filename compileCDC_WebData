@@ -1,0 +1,67 @@
+import pandas as pd
+import requests
+from io import StringIO
+from pathlib import Path
+
+# CDC report links (correct mapping)
+reports = [
+    (2022, "https://www.cdc.gov/mmwr/volumes/73/ss/ss7307a1.htm"),
+    (2021, "https://www.cdc.gov/mmwr/volumes/72/ss/ss7209a1.htm"),
+    (2020, "https://www.cdc.gov/mmwr/volumes/71/ss/ss7110a1.htm"),
+    (2019, "https://www.cdc.gov/mmwr/volumes/70/ss/ss7009a1.htm"),
+    (2018, "https://www.cdc.gov/mmwr/volumes/69/ss/ss6907a1.htm"),
+    (2017, "https://www.cdc.gov/mmwr/volumes/68/ss/ss6811a1.htm"),
+    (2016, "https://www.cdc.gov/mmwr/volumes/67/ss/ss6713a1.htm"),
+    (2015, "https://www.cdc.gov/mmwr/volumes/66/ss/ss6624a1.htm"),
+    (2014, "https://www.cdc.gov/mmwr/volumes/65/ss/ss6512a1.htm"),
+    (2013, "https://www.cdc.gov/mmwr/volumes/64/ss/ss6410a1.htm"),
+]
+
+output_file = Path("1cdc_abortion_clean_master_2013_2022.xlsx")
+
+all_data = []
+
+def clean_column(col):
+    col = str(col).replace("\n", " ").strip()
+    return col
+
+for year, url in reports:
+    print(f"Processing {year}: {url}")
+
+    try:
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        tables = pd.read_html(StringIO(response.text), flavor="lxml")
+    except Exception as e:
+        print(f"Skipping {year}: {e}")
+        continue
+
+    for table_number, df in enumerate(tables, start=1):
+
+        # Drop empty rows/columns
+        df = df.dropna(how="all").dropna(axis=1, how="all")
+
+        if df.empty or len(df.columns) < 2:
+            continue
+
+        # Clean headers
+        df.columns = [clean_column(c) for c in df.columns]
+
+        # First column = state/row label
+        first_col = df.columns[0]
+        df = df.rename(columns={first_col: "State"})
+
+        # Add metadata
+        df.insert(0, "Year", year)
+        df.insert(1, "Table_Number", table_number)
+
+        all_data.append(df)
+
+# Combine everything
+master_df = pd.concat(all_data, ignore_index=True)
+
+# Save
+master_df.to_excel(output_file, index=False)
+
+print("Done.")
+print(f"Saved to: {output_file}")
